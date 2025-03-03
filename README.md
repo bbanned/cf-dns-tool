@@ -61,7 +61,7 @@ blog,CNAME,myblog.com
 
 ## 📄 开源协议
 
-MIT License
+[MIT License](LICENSE)
 
 ## 🤝 贡献指南
 
