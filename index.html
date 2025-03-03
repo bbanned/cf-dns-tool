@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloudflare 域名批量解析工具 - 快速配置多域名DNS记录</title>
+    <meta name="description" content="免费的Cloudflare域名批量解析工具，支持一键配置多个域名的DNS记录，快速设置A记录、CNAME等，并可启用HTTPS">
+    <meta name="keywords" content="Cloudflare, DNS解析, 域名管理, 批量配置, HTTPS配置, DNS记录">
+    <meta name="author" content="Cloudflare DNS Tool">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cf.112.icu/">
+    <meta property="og:title" content="Cloudflare 域名批量解析工具">
+    <meta property="og:description" content="免费的Cloudflare域名批量解析工具，支持一键配置多个域名的DNS记录">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Cloudflare 域名批量解析工具">
+    <meta name="twitter:description" content="免费的Cloudflare域名批量解析工具，支持一键配置多个域名的DNS记录">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.ico">
+    
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- 规范链接 -->
+    <link rel="canonical" href="https://cf.112.icu/">
+</head>
+<body class="bg-gray-50 flex flex-col min-h-full">
+    <nav class="bg-white shadow-lg backdrop-blur-md bg-opacity-80 sticky top-0 z-50">
+        <div class="max-w-3xl mx-auto px-3">
+            <div class="flex justify-between h-12">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-cloud text-blue-500 text-lg"></i>
+                    <span class="text-base font-semibold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent hidden sm:inline">Cloudflare</span>
+                    <span class="text-base font-semibold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent sm:hidden">Cloudflare</span>
+                </div>
+                <div class="flex items-center">
+                    <button id="authBtn" class="flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-blue-500 rounded-full hover:bg-blue-50 transition-all duration-300">
+                        <i class="fas fa-key mr-1.5"></i>
+                        <span id="authStatus" class="hidden sm:inline">设置认证信息</span>
+                        <span id="authStatusMobile" class="sm:hidden">API</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-3 sm:p-4 w-[85%] sm:w-[320px] mx-3 animate-fade-in">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center">
+                    <i class="fas fa-key text-blue-500 text-base mr-2"></i>
+                    <h2 class="text-base font-semibold text-gray-800">认证信息</h2>
+                </div>
+                <button id="closeAuth" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-3">
+                <div class="relative">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-envelope text-gray-400 mr-1"></i>Email
+                    </label>
+                    <input type="email" id="email" class="block w-full px-2.5 py-1.5 text-sm rounded-md border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+                </div>
+                <div class="relative">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-lock text-gray-400 mr-1"></i>API Key
+                    </label>
+                    <input type="password" id="apiKey" class="block w-full px-2.5 py-1.5 text-sm rounded-md border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+                </div>
+                <button id="saveAuth" class="w-full btn-primary flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-md text-white">
+                    <i class="fas fa-save mr-1"></i>
+                    <span class="hidden sm:inline">保存认证信息</span>
+                    <span class="sm:hidden">保存</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-grow container mx-auto px-3 py-4 max-w-3xl">
+        <div class="bg-white rounded-xl shadow p-4 mb-4 card-hover">
+            <div class="flex items-center mb-4">
+                <div class="p-2 bg-blue-50 rounded-lg mr-3">
+                    <i class="fas fa-globe text-blue-500 text-lg"></i>
+                </div>
+                <h2 class="text-lg sm:text-xl font-semibold text-gray-800">域名配置</h2>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                        <i class="fas fa-list text-gray-400 mr-1.5"></i>域名列表
+                    </label>
+                    <textarea id="domains" rows="3" class="block w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" placeholder="每行输入一个域名&#10;例如：example.com"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                        <i class="fas fa-dns text-gray-400 mr-1.5"></i>解析记录
+                    </label>
+                    <textarea id="records" rows="3" class="block w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" placeholder="格式：name,type,content&#10;例如：www,A,1.2.3.4&#10;@,A,2.3.4.5"></textarea>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-t space-y-3 sm:space-y-0">
+                    <label class="flex items-center text-sm text-gray-700">
+                        <i class="fas fa-lock text-gray-400 mr-1.5"></i>
+                        始终启用HTTPS
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <div class="relative inline-block">
+                            <input type="checkbox" id="httpsToggle" class="sr-only peer" checked>
+                            <div class="toggle-bg block w-10 h-6 rounded-full bg-gray-200"></div>
+                            <div class="toggle-dot absolute left-1 top-1 w-4 h-4 rounded-full bg-white shadow-md"></div>
+                        </div>
+                    </label>
+                </div>
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-3">
+                    <button id="submit" class="btn-primary flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg text-white">
+                        <i class="fas fa-plus mr-1.5"></i>
+                        <span class="hidden sm:inline">添加配置</span>
+                        <span class="sm:hidden">添加</span>
+                    </button>
+                    <button id="delete" class="btn-danger flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg text-white">
+                        <i class="fas fa-trash-alt mr-1.5"></i>
+                        <span class="hidden sm:inline">删除配置</span>
+                        <span class="sm:hidden">删除</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="result" class="bg-white rounded-xl shadow p-4 hidden card-hover">
+            <div class="flex items-center mb-4">
+                <div class="p-2 bg-gray-50 rounded-lg mr-3">
+                    <i class="fas fa-terminal text-blue-500 text-lg"></i>
+                </div>
+                <h2 class="text-lg sm:text-xl font-semibold text-gray-800">执行结果</h2>
+            </div>
+            <pre id="output" class="bg-gray-50 p-3 sm:p-4 rounded-lg text-xs sm:text-sm font-mono text-gray-700 overflow-auto max-h-60 sm:max-h-72"></pre>
+        </div>
+    </div>
+
+    <footer class="bg-white py-3 sm:py-4 border-t mt-auto">
+        <div class="container mx-auto px-3 text-center">
+            <p class="text-gray-500 text-xs">© 2025 Cloudflare 域名批量解析</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html> 
